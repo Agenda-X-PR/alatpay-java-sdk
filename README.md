@@ -1,5 +1,10 @@
 # ALAT Pay Java SDK
 
+[![Java CI with Maven](https://github.com/Agenda-X-PR/alatpay-java-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/Agenda-X-PR/alatpay-java-sdk/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Java Version](https://img.shields.io/badge/Java-21-orange.svg)](https://adoptium.net)
+[![Maven](https://img.shields.io/badge/Maven-3.9+-blue.svg)](https://maven.apache.org)
+
 A community-built Java SDK for integrating [ALAT Pay](https://alatpay.ng) into your Java applications.
 
 > **⚠️ Disclaimer:** This is an independent, community-built SDK. It is not affiliated with, endorsed by, or maintained by Wema Bank PLC or ALAT Pay.
