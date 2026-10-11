@@ -1,0 +1,31 @@
+# Compiled Java
+target/
+*.class
+*.jar
+
+# Maven
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+release.properties
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Secrets — NEVER commit these
+.env
+secrets.properties
+application-local.properties
