@@ -5,6 +5,7 @@ import com.alatpay.sdk.exception.AlatPayAuthException;
 import com.alatpay.sdk.exception.AlatPayNetworkException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.alatpay.sdk.service.BankTransferService;
+import com.alatpay.sdk.service.SettlementService;
 
 import java.io.IOException;
 import java.net.URI;
@@ -33,6 +34,7 @@ public class AlatPayClient {
     private HttpClient httpClient;
     private ObjectMapper mapper;
     private BankTransferService bankTransferService;
+    private SettlementService settlementService;
 
     /**
  * Constructs a new SDK client using the given configuration.
@@ -45,6 +47,7 @@ public class AlatPayClient {
         this.httpClient = HttpClient.newHttpClient();
         this.mapper = new ObjectMapper();
         this.bankTransferService = new BankTransferService(this);
+        this.settlementService = new SettlementService(this);
     }
 
     /**
@@ -56,49 +59,57 @@ public class AlatPayClient {
  * @throws AlatPayNetworkException if the server cannot be reached
  */
 
-    public List<Transaction> listTransactions() throws AlatPayApiException, AlatPayNetworkException {
-        String fullUrl = config.getBaseUrl() + "/alatpaytransaction/api/v1/transactions";
+       /**
+     * Fetches the first page of transactions for your business.
+     *
+     * @return a list of {@link Transaction} objects
+     * @throws AlatPayAuthException    if the credentials are invalid
+     * @throws AlatPayApiException     if ALAT Pay returns any other error
+     * @throws AlatPayNetworkException if the server cannot be reached
+     */
+    public List<Transaction> listTransactions()
+            throws AlatPayAuthException, AlatPayApiException, AlatPayNetworkException {
+        return listTransactions(1);
+    }
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(fullUrl))
-                .header("Authorization", "Bearer " + config.getSecretKey())
-                .header("Business-Id", config.getBusinessId())
-                .header("Ocp-Apim-Subscription-Key", config.getSubscriptionKey())
-                .GET()
-                .build();
+    /**
+     * Fetches a specific page of transactions for your business.
+     *
+     * @param page the page number (1-based)
+     * @return a list of {@link Transaction} objects
+     * @throws AlatPayAuthException    if the credentials are invalid
+     * @throws AlatPayApiException     if ALAT Pay returns any other error
+     * @throws AlatPayNetworkException if the server cannot be reached
+     */
+    public List<Transaction> listTransactions(int page)
+            throws AlatPayAuthException, AlatPayApiException, AlatPayNetworkException {
 
-        HttpResponse<String> response;
-        try {
-            response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        } catch (IOException e) {
-            throw new AlatPayNetworkException("Could not reach ALAT Pay servers", e);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new AlatPayNetworkException("Request was interrupted", e);
-        }
+        String path = "/alatpaytransaction/api/v1/transactions"
+                + "?page=" + page
+                + "&businessId=" + config.getBusinessId();
 
-        int status = response.statusCode();
-        String body = response.body();
+        TransactionListResponse response = get(path, TransactionListResponse.class);
+        return response.getData();
+    }
 
-        // Handle different error categories
-        if (status == 401 || status == 403) {
-            throw new AlatPayAuthException(
-                "Authentication failed: " + extractMessage(body), status, body);
-        }
+        /**
+     * Fetches the details of a single transaction by its ID.
+     *
+     * @param transactionId the transaction ID returned by ALAT Pay
+     * @return the {@link Transaction} object
+     * @throws AlatPayAuthException    if the credentials are invalid
+     * @throws AlatPayApiException     if ALAT Pay returns any other error
+     * @throws AlatPayNetworkException if the server cannot be reached
+     */
+    public Transaction getTransaction(String transactionId)
+            throws AlatPayAuthException, AlatPayApiException, AlatPayNetworkException {
 
-        if (status >= 400) {
-            throw new AlatPayApiException(
-                "ALAT Pay returned error: " + extractMessage(body), status, body);
-        }
+        String path = "/alatpaytransaction/api/v1/transactions/"
+                + transactionId
+                + "?businessId=" + config.getBusinessId();
 
-        // Success — parse it
-        try {
-            TransactionListResponse parsed = mapper.readValue(body, TransactionListResponse.class);
-            return parsed.getData();
-        } catch (IOException e) {
-            throw new AlatPayApiException(
-                "Could not parse ALAT Pay response: " + e.getMessage(), status, body);
-        }
+        SingleTransactionResponse response = get(path, SingleTransactionResponse.class);
+        return response.getData();
     }
 
    /**
@@ -128,6 +139,13 @@ public class AlatPayClient {
  * @return the bank transfer service
  */
     public BankTransferService bankTransfer() { return bankTransferService; }
+    /**
+ * Returns the settlements service for retrieving payout records.
+ *
+ * @return the settlements service
+ */
+public SettlementService settlements() { return settlementService; }
+
 
     public ObjectMapper getMapper() { return mapper; }
     public HttpClient getHttpClient() { return httpClient; }

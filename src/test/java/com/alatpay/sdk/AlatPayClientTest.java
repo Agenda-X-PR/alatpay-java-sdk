@@ -43,8 +43,8 @@ class AlatPayClientTest {
     @Test
     void shouldParseSuccessfulTransactionList() throws Exception {
         // 1. Tell the fake server what to respond with
-        String fakeJson = "{"
-                + "\"status\":\"success\","
+                String fakeJson = "{"
+                + "\"status\":true,"
                 + "\"message\":\"OK\","
                 + "\"data\":["
                 + "  {\"id\":\"txn_1\",\"amount\":5000,\"status\":\"successful\","
@@ -108,7 +108,7 @@ class AlatPayClientTest {
         // Respond successfully to any request
         server.enqueue(new MockResponse()
                 .setResponseCode(200)
-                .setBody("{\"status\":\"success\",\"data\":[]}")
+                    .setBody("{\"status\":true,\"data\":[]}")
                 .addHeader("Content-Type", "application/json"));
 
         // Trigger a request

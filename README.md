@@ -7,27 +7,40 @@
 
 A community-built Java SDK for integrating [ALAT Pay](https://alatpay.ng) into your Java applications.
 
-> **⚠️ Disclaimer:** This is an independent, community-built SDK. It is not affiliated with, endorsed by, or maintained by Wema Bank PLC or ALAT Pay.
+> **⚠️ Disclaimer:** This is an independent, community-built SDK. It is not affiliated with, endorsed by, or maintained by Wema Bank PLC or ALATPay.
 
 ## Features
 
-- Three-header authentication (Secret Key, Business ID, Subscription Key)
-- Bank Transfer (virtual accounts)
-- USSD payments (coming soon)
-- Static wallets (coming soon)
-- Transaction listing
-- Modern Java 17+ HTTP client
-- Typed exceptions for clean error handling
+- 🔐 Three-header authentication (Secret Key, Business ID, Subscription Key)
+- 📊 Transaction monitoring (list & filter transactions, get single transaction)
+- 💰 Settlements retrieval
+- 💳 Bank Transfer (virtual accounts) — *pending endpoint documentation*
+- 📱 USSD payments — *planned*
+- 🏦 Static wallets — *planned*
+- ⚡ Modern Java 21+ HTTP client
+- 🛡️ Typed exceptions for clean error handling
+- 📄 Full Javadoc on all public APIs
+- ✅ Comprehensive unit tests with MockWebServer
 
 ## Requirements
 
-- Java 17 or higher
-- Maven 3.6+
-- An ALAT Pay merchant account with API credentials
+- Java 21 or higher
+- Maven 3.9+
+- An ALATPay merchant account with API credentials
 
 ## Installation
 
-Add this to your `pom.xml`:
+### From Source (Currently)
+
+This SDK is not yet published to Maven Central. To use it, clone and install locally:
+
+```bash
+git clone https://github.com/Agenda-X-PR/alatpay-java-sdk.git
+cd alatpay-java-sdk
+mvn clean install
+```
+
+Then add it to your `pom.xml`:
 
 ```xml
 <dependency>
@@ -37,28 +50,9 @@ Add this to your `pom.xml`:
 </dependency>
 ```
 
-## Quick Start
+### From Maven Central
 
-```java
-import com.alatpay.sdk.AlatPayClient;
-import com.alatpay.sdk.AlatPayConfig;
-
-public class Example {
-    public static void main(String[] args) throws Exception {
-        AlatPayConfig config = new AlatPayConfig(
-            "sk_your_secret_key",
-            "your_subscription_key",
-            "your_business_id"
-        );
-
-        AlatPayClient client = new AlatPayClient(config);
-
-        // List transactions
-        var transactions = client.listTransactions();
-        transactions.forEach(System.out::println);
-    }
-}
-```
+*Coming soon.*
 
 ## Getting Credentials
 
@@ -66,9 +60,67 @@ You need three credentials from ALAT Pay:
 
 | Credential | Where to find it |
 | :--- | :--- |
-| **Secret Key** | Merchant Dashboard → Settings → Developer |
-| **Business ID** | Merchant Dashboard → Settings → Business |
-| **Subscription Key** | Azure APIM Portal → Subscribe to product |
+| **Secret Key** | Merchant Dashboard → Settings → Business → View (requires PIN) |
+| **Business ID** | Same location as the Secret Key |
+| **Subscription Key** | ALATPay developer portal → subscribe to an API product |
+
+**Never hardcode credentials.** Use environment variables or a secrets manager.
+
+### Environment Variables
+
+Set these before running your application:
+
+**Windows (PowerShell):**
+
+```powershell
+$env:ALATPAY_SECRET_KEY="sk_your_secret_key"
+$env:ALATPAY_SUBSCRIPTION_KEY="your_subscription_key"
+$env:ALATPAY_BUSINESS_ID="your_business_id"
+```
+
+**Mac / Linux:**
+
+```bash
+export ALATPAY_SECRET_KEY="sk_your_secret_key"
+export ALATPAY_SUBSCRIPTION_KEY="your_subscription_key"
+export ALATPAY_BUSINESS_ID="your_business_id"
+```
+
+Or pass them directly to `AlatPayConfig` from your own configuration system.
+
+## Quick Start
+
+```java
+import com.alatpay.sdk.AlatPayClient;
+import com.alatpay.sdk.AlatPayConfig;
+import com.alatpay.sdk.Transaction;
+
+import java.util.List;
+
+public class Example {
+    public static void main(String[] args) throws Exception {
+
+        AlatPayConfig config = new AlatPayConfig(
+            System.getenv("ALATPAY_SECRET_KEY"),
+            System.getenv("ALATPAY_SUBSCRIPTION_KEY"),
+            System.getenv("ALATPAY_BUSINESS_ID")
+        );
+
+        AlatPayClient client = new AlatPayClient(config);
+
+        // List all transactions (first page)
+        List<Transaction> transactions = client.listTransactions();
+        transactions.forEach(System.out::println);
+
+        // Get a specific page
+        List<Transaction> page2 = client.listTransactions(2);
+
+        // Get a single transaction
+        Transaction txn = client.getTransaction("transaction-id-here");
+        System.out.println("Status: " + txn.getStatus());
+    }
+}
+```
 
 ## Error Handling
 
@@ -78,30 +130,90 @@ The SDK provides typed exceptions so you can handle different failures precisely
 try {
     client.listTransactions();
 } catch (AlatPayAuthException e) {
-    // Wrong credentials
+    // Invalid or missing credentials (401/403)
+    System.err.println("Auth problem: " + e.getMessage());
 } catch (AlatPayNetworkException e) {
-    // Connection problem
+    // Could not reach ALAT Pay servers
+    System.err.println("Network problem: " + e.getMessage());
 } catch (AlatPayApiException e) {
-    // Server returned an error
+    // Server returned an error (4xx / 5xx)
+    System.err.println("API error [" + e.getStatusCode() + "]: " + e.getMessage());
 }
 ```
+
+All three exceptions extend `AlatPayException`, which you can catch as a fallback.
+
+## Payment Channels
+
+When making payments, ALATPay accepts a `channel` field with these values:
+
+| Value | Payment Channel |
+| :--- | :--- |
+| `*` | All |
+| `1` | Card |
+| `2` | Bank Transfer |
+| `3` | Bank Details |
+| `5` | Phone (USSD) |
+| `8` | Static Account |
 
 ## Project Structure
 
 ```
 src/main/java/com/alatpay/sdk/
-├── AlatPayClient.java         # Main entry point
-├── AlatPayConfig.java         # Credentials holder
-├── Transaction.java           # Transaction model
-├── Customer.java              # Customer model
-├── exception/                 # Typed exceptions
-└── service/                   # API service wrappers
+├── AlatPayClient.java              # Main entry point + shared HTTP logic
+├── AlatPayConfig.java              # Credentials holder
+├── Transaction.java                # Transaction model
+├── TransactionListResponse.java    # Paginated transaction list response
+├── SingleTransactionResponse.java  # Single transaction response
+├── Settlement.java                 # Settlement model
+├── SettlementListResponse.java     # Settlement list response
+├── Customer.java                   # Customer model
+├── VirtualAccountResponse.java     # Bank transfer response
+├── exception/
+│   ├── AlatPayException.java       # Base exception
+│   ├── AlatPayApiException.java    # API errors (4xx/5xx)
+│   ├── AlatPayAuthException.java   # Authentication errors (401/403)
+│   └── AlatPayNetworkException.java # Network errors
+└── service/
+    ├── BankTransferService.java    # Bank transfer (pending spec)
+    └── SettlementService.java      # Settlements
 ```
+
+## Building & Testing
+
+```bash
+# Compile
+mvn clean compile
+
+# Run all tests
+mvn clean test
+
+# Package as JAR
+mvn clean package
+```
+
+All tests use MockWebServer — no real API credentials required to run them.
+
+## Roadmap
+
+- [x] Transaction monitoring (list + filter)
+- [x] Single transaction lookup
+- [x] Settlements retrieval
+- [x] Typed exception hierarchy
+- [x] Unit tests + CI
+- [ ] Bank Transfer (virtual account generation) — *pending endpoint docs*
+- [ ] USSD payment flow
+- [ ] Static wallets
+- [ ] Publishing to Maven Central
 
 ## Contributing
 
-Pull requests are welcome. For major changes, please open an issue first.
+Pull requests are welcome. Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for a version history.
 
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE) for details.

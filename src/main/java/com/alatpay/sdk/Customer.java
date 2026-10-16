@@ -28,6 +28,18 @@ public class Customer {
     @JsonProperty("lastName")
     private String lastName;
 
+        @JsonProperty("id")
+    private String id;
+
+    @JsonProperty("transactionId")
+    private String transactionId;
+
+    @JsonProperty("createdAt")
+    private String createdAt;
+
+    @JsonProperty("metadata")
+    private String metadata;
+
     /**
      * Empty constructor required by Jackson.
      */
@@ -68,6 +80,18 @@ public class Customer {
      * @return the last name
      */
     public String getLastName() { return lastName; }
+
+        /** @return the customer's unique ID */
+    public String getId() { return id; }
+
+    /** @return the transaction ID associated with this customer */
+    public String getTransactionId() { return transactionId; }
+
+    /** @return the customer creation timestamp */
+    public String getCreatedAt() { return createdAt; }
+
+    /** @return any metadata attached to the customer */
+    public String getMetadata() { return metadata; }
 
     /**
      * Fluent builder for {@link Customer} instances.
