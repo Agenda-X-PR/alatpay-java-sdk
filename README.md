@@ -7,8 +7,6 @@
 
 A community-built Java SDK for integrating [ALAT Pay](https://alatpay.ng) into your Java applications.
 
-> **⚠️ Disclaimer:** This is an independent, community-built SDK. It is not affiliated with, endorsed by, or maintained by Wema Bank PLC or ALATPay.
-
 ## Features
 
 - 🔐 Three-header authentication (Secret Key, Business ID, Subscription Key)
