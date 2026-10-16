@@ -17,8 +17,9 @@ import com.alatpay.sdk.exception.AlatPayNetworkException;
  */
 public class BankTransferService {
 
+        // Reserved for future use once the bank transfer endpoint is documented.
+    @SuppressWarnings("unused")
     private final AlatPayClient client;
-
     public BankTransferService(AlatPayClient client) {
         this.client = client;
     }

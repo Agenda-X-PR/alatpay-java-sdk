@@ -12,7 +12,7 @@ import java.util.List;
  * status, message, and pagination metadata.</p>
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class TransactionListResponse {
+public class TransactionListResponse implements AlatPayResponse {
 
     @JsonProperty("status")
     private boolean status;

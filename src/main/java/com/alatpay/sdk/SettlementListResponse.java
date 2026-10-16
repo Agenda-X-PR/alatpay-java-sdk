@@ -9,7 +9,7 @@ import java.util.List;
  * Response envelope for the ALAT Pay settlements listing endpoint.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class SettlementListResponse {
+public class SettlementListResponse implements AlatPayResponse {
 
     @JsonProperty("status")
     private boolean status;

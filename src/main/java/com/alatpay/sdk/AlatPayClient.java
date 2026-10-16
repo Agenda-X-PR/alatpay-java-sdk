@@ -13,6 +13,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
+import java.time.Duration;
 
 /**
  * Main entry point for the ALAT Pay Java SDK.
@@ -42,14 +43,15 @@ public class AlatPayClient {
  * @param config the configuration holding your ALAT Pay credentials
  */
 
-    public AlatPayClient(AlatPayConfig config) {
+      public AlatPayClient(AlatPayConfig config) {
         this.config = config;
-        this.httpClient = HttpClient.newHttpClient();
+        this.httpClient = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(config.getTimeoutSeconds()))
+                .build();
         this.mapper = new ObjectMapper();
         this.bankTransferService = new BankTransferService(this);
         this.settlementService = new SettlementService(this);
     }
-
     /**
  * Fetches the list of transactions for your business.
  *
@@ -163,11 +165,12 @@ public SettlementService settlements() { return settlementService; }
     public<T> T get(String path, Class<T> responseType)
             throws AlatPayAuthException, AlatPayApiException, AlatPayNetworkException {
 
-        HttpRequest request = HttpRequest.newBuilder()
+               HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(config.getBaseUrl() + path))
                 .header("Authorization", "Bearer " + config.getSecretKey())
                 .header("Business-Id", config.getBusinessId())
                 .header("Ocp-Apim-Subscription-Key", config.getSubscriptionKey())
+                .timeout(Duration.ofSeconds(config.getTimeoutSeconds()))
                 .GET()
                 .build();
 
@@ -196,12 +199,13 @@ public SettlementService settlements() { return settlementService; }
             throw new AlatPayApiException("Could not serialize request body: " + e.getMessage(), 0, null);
         }
 
-        HttpRequest request = HttpRequest.newBuilder()
+              HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(config.getBaseUrl() + path))
                 .header("Authorization", "Bearer " + config.getSecretKey())
                 .header("Business-Id", config.getBusinessId())
                 .header("Ocp-Apim-Subscription-Key", config.getSubscriptionKey())
                 .header("Content-Type", "application/json")
+                .timeout(Duration.ofSeconds(config.getTimeoutSeconds()))
                 .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
                 .build();
 
@@ -237,11 +241,25 @@ public SettlementService settlements() { return settlementService; }
                     "ALAT Pay returned error: " + extractMessage(body), status, body);
         }
 
+               T parsed;
         try {
-            return mapper.readValue(body, responseType);
+            parsed = mapper.readValue(body, responseType);
         } catch (IOException e) {
             throw new AlatPayApiException(
                     "Could not parse ALAT Pay response: " + e.getMessage(), status, body);
         }
+
+        // If the response implements AlatPayResponse, check the status field.
+        // ALAT Pay can return HTTP 200 with status:false — treat that as an error.
+        if (parsed instanceof AlatPayResponse) {
+            AlatPayResponse envelope = (AlatPayResponse) parsed;
+            if (!envelope.isStatus()) {
+                throw new AlatPayApiException(
+                        "ALAT Pay reported failure: " + envelope.getMessage(),
+                        status, body);
+            }
+        }
+
+        return parsed;
     }
 }

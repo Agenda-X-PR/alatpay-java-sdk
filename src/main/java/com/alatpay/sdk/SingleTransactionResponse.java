@@ -9,8 +9,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * <p>Wraps a single {@link Transaction} alongside status and message.</p>
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class SingleTransactionResponse {
-
+public class SingleTransactionResponse implements AlatPayResponse {
     @JsonProperty("status")
     private boolean status;
 

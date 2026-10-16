@@ -32,7 +32,14 @@ class AlatPayClientTest {
 
         // We need a way to inject the URL — for now, we'll use reflection-free approach
         // by creating config with a fake URL. Let's build a config just for tests:
-        client = new AlatPayClient(configWithUrl(fakeBaseUrl));
+               AlatPayConfig config = new AlatPayConfig(
+                "sk_test_fake",
+                "sub_test_fake",
+                "biz_test_fake",
+                fakeBaseUrl,
+                10  // short timeout for tests
+        );
+        client = new AlatPayClient(config);
     }
 
     @AfterEach
@@ -125,19 +132,20 @@ class AlatPayClientTest {
         assertEquals("sub_test_fake",
                 receivedRequest.getHeader("Ocp-Apim-Subscription-Key"));
     }
+    
+        @Test
+    void shouldThrowApiExceptionWhenStatusIsFalse() {
+        // HTTP 200 but the envelope says status:false — should be treated as an error
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setBody("{\"status\":false,\"message\":\"Insufficient balance\",\"data\":null}")
+                .addHeader("Content-Type", "application/json"));
 
-    // Helper — creates a config with a specific base URL for testing
-    private AlatPayConfig configWithUrl(String url) {
-        // We can't modify AlatPayConfig's baseUrl externally, so we use reflection here.
-        // Alternatively, you could add a setter/builder to AlatPayConfig later.
-        AlatPayConfig config = new AlatPayConfig("sk_test_fake", "sub_test_fake", "biz_test_fake");
-        try {
-            var field = AlatPayConfig.class.getDeclaredField("baseUrl");
-            field.setAccessible(true);
-            field.set(config, url);
-        } catch (Exception e) {
-            throw new RuntimeException("Could not set baseUrl for test", e);
-        }
-        return config;
+        AlatPayApiException ex = assertThrows(
+                AlatPayApiException.class,
+                () -> client.listTransactions()
+        );
+
+        assertTrue(ex.getMessage().contains("Insufficient balance"));
     }
 }
