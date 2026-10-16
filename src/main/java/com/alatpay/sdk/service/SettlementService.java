@@ -5,6 +5,7 @@ import com.alatpay.sdk.Settlement;
 import com.alatpay.sdk.SettlementListResponse;
 import com.alatpay.sdk.exception.AlatPayApiException;
 import com.alatpay.sdk.exception.AlatPayAuthException;
+import com.alatpay.sdk.util.UrlEncoder;
 import com.alatpay.sdk.exception.AlatPayNetworkException;
 
 import java.util.List;
@@ -49,7 +50,7 @@ public class SettlementService {
 
         String path = "/payment-settlement/api/v1/settlements"
                 + "?page=" + page
-                + "&businessId=" + client.getConfig().getBusinessId();
+                + "&businessId=" + UrlEncoder.query(client.getConfig().getBusinessId());
 
         SettlementListResponse response = client.get(path, SettlementListResponse.class);
         return response.getData();

@@ -6,6 +6,7 @@ import com.alatpay.sdk.exception.AlatPayNetworkException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.alatpay.sdk.service.BankTransferService;
 import com.alatpay.sdk.service.SettlementService;
+import com.alatpay.sdk.util.UrlEncoder;
 
 import java.io.IOException;
 import java.net.URI;
@@ -86,9 +87,9 @@ public class AlatPayClient {
     public List<Transaction> listTransactions(int page)
             throws AlatPayAuthException, AlatPayApiException, AlatPayNetworkException {
 
-        String path = "/alatpaytransaction/api/v1/transactions"
+                String path = "/alatpaytransaction/api/v1/transactions"
                 + "?page=" + page
-                + "&businessId=" + config.getBusinessId();
+                + "&businessId=" + UrlEncoder.query(config.getBusinessId());
 
         TransactionListResponse response = get(path, TransactionListResponse.class);
         return response.getData();
@@ -106,10 +107,9 @@ public class AlatPayClient {
     public Transaction getTransaction(String transactionId)
             throws AlatPayAuthException, AlatPayApiException, AlatPayNetworkException {
 
-        String path = "/alatpaytransaction/api/v1/transactions/"
-                + transactionId
-                + "?businessId=" + config.getBusinessId();
-
+                String path = "/alatpaytransaction/api/v1/transactions/"
+                + UrlEncoder.path(transactionId)
+                + "?businessId=" + UrlEncoder.query(config.getBusinessId());
         SingleTransactionResponse response = get(path, SingleTransactionResponse.class);
         return response.getData();
     }
